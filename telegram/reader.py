@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
-from config.settings import SIGNAL_TIMEZONE, TARGET_SYMBOL
+from config.settings import BROKER_TIMEZONE, TARGET_SYMBOL
 
 LOGGER = logging.getLogger(__name__)
 TIMESTAMP_PATTERN = re.compile(
@@ -32,8 +32,8 @@ class TelegramSignal:
     direction: str | None = None
 
 
-def parse_signal(message_text: str, timezone_name: str = SIGNAL_TIMEZONE) -> TelegramSignal | None:
-    """Parse only the configured indicator/symbol C.S.T. message format."""
+def parse_signal(message_text: str) -> TelegramSignal | None:
+    """Parse the configured message format using its timestamp as broker time."""
     if not INDICATOR_PATTERN.search(message_text) or not SYMBOL_PATTERN.search(message_text):
         return None
     match = TIMESTAMP_PATTERN.search(message_text)
@@ -43,9 +43,9 @@ def parse_signal(message_text: str, timezone_name: str = SIGNAL_TIMEZONE) -> Tel
     try:
         timestamp = datetime.strptime(
             f"{normalized_date} {match.group('time')}", "%Y-%m-%d %H:%M"
-        ).replace(tzinfo=ZoneInfo(timezone_name))
-    except (ValueError, KeyError) as exc:
-        raise ValueError(f"Invalid signal timestamp or timezone: {timezone_name}.") from exc
+        ).replace(tzinfo=ZoneInfo(BROKER_TIMEZONE))
+    except ValueError as exc:
+        raise ValueError(f"Invalid broker signal timestamp or timezone: {BROKER_TIMEZONE}.") from exc
     return TelegramSignal(timestamp=timestamp)
 
 

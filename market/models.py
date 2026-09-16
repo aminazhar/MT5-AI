@@ -59,3 +59,36 @@ class Candle:
                 f"Candle timezone mismatch: expected {timezone_name}, "
                 f"received {self.timestamp.tzinfo}."
             )
+
+
+@dataclass(frozen=True)
+class MarketPrice:
+    """One validated bid/ask market-price snapshot."""
+
+    timestamp: datetime
+    bid: float
+    ask: float
+    last: float | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.timestamp, datetime) or self.timestamp.tzinfo is None:
+            raise ValueError("Market-price timestamp must be a timezone-aware datetime.")
+        for field_name in ("bid", "ask"):
+            value = getattr(self, field_name)
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Market-price {field_name} must be numeric.") from exc
+            if not isfinite(numeric_value) or numeric_value <= 0:
+                raise ValueError(f"Market-price {field_name} must be finite and greater than zero.")
+            object.__setattr__(self, field_name, numeric_value)
+        if self.ask < self.bid:
+            raise ValueError("Market-price ask must be greater than or equal to bid.")
+        if self.last is not None:
+            try:
+                last = float(self.last)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Market-price last must be numeric.") from exc
+            if not isfinite(last) or last <= 0:
+                raise ValueError("Market-price last must be finite and greater than zero.")
+            object.__setattr__(self, "last", last)

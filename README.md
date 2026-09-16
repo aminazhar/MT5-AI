@@ -26,7 +26,7 @@ Start your local MT5 terminal, then run:
 python -m market.candles --timestamp "2026-09-16 10:33" --symbol FixedVol100
 ```
 
-This is read-only. It uses the account already connected in your local terminal only to retrieve the M1 candle at the broker/CST timestamp, then displays OHLC plus Fibonacci levels. It has no order, position, or trade-execution code. MT5 stores bar timestamps in UTC, so the reader explicitly converts the configured signal timezone before querying.
+This is read-only. It uses the account already connected in your local terminal only to retrieve the M1 candle at the broker/CST timestamp, then displays OHLC plus Fibonacci levels. It has no order, position, or trade-execution code. Telegram signal timestamps are already confirmed to match the MT5 broker candle timestamps, so they are used directly without timezone conversion. The canonical broker timestamp timezone is configured by `BROKER_TIMEZONE`.
 
 ## Test the authorized Telegram reader
 

@@ -6,25 +6,24 @@ import argparse
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from config.settings import FIB_DIRECTION, FIB_LEVELS, SIGNAL_TIMEZONE, TARGET_SYMBOL
+from config.settings import BROKER_TIMEZONE, FIB_DIRECTION, FIB_LEVELS, TARGET_SYMBOL
 from fibonacci.calculator import calculate_named_fibonacci_levels
 from market.models import Candle
 from mt5.connector import connected_terminal
 
 
 def retrieve_m1_candle(mt5: object, symbol: str, signal_time: datetime) -> Candle:
-    """Retrieve the bar opened at ``signal_time``; MT5 storage is queried in UTC."""
+    """Retrieve the bar opened at the broker-time ``signal_time``."""
     if signal_time.tzinfo is None:
         raise ValueError("Signal time must be timezone-aware.")
     if not mt5.symbol_select(symbol, True):
         raise RuntimeError(f"Unable to select MT5 symbol {symbol!r}: {mt5.last_error()}")
 
-    start_utc = signal_time.astimezone(UTC)
-    end_utc = start_utc + timedelta(minutes=1)
-    rates = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, start_utc, end_utc)
+    end_time = signal_time + timedelta(minutes=1)
+    rates = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, signal_time, end_time)
     if rates is None:
         raise RuntimeError(f"MT5 candle lookup failed: {mt5.last_error()}")
-    expected_epoch = int(start_utc.timestamp())
+    expected_epoch = int(signal_time.timestamp())
     matching_rates = [rate for rate in rates if int(rate["time"]) == expected_epoch]
     if not matching_rates:
         raise LookupError(
@@ -33,7 +32,7 @@ def retrieve_m1_candle(mt5: object, symbol: str, signal_time: datetime) -> Candl
         )
     rate = matching_rates[0]
     return Candle(
-        timestamp=datetime.fromtimestamp(int(rate["time"]), UTC).astimezone(signal_time.tzinfo),
+        timestamp=datetime.fromtimestamp(int(rate["time"]), UTC),
         open=float(rate["open"]),
         high=float(rate["high"]),
         low=float(rate["low"]),
@@ -47,7 +46,7 @@ def main() -> None:
     parser.add_argument("--symbol", default=TARGET_SYMBOL)
     args = parser.parse_args()
     signal_time = datetime.strptime(args.timestamp, "%Y-%m-%d %H:%M").replace(
-        tzinfo=ZoneInfo(SIGNAL_TIMEZONE)
+        tzinfo=ZoneInfo(BROKER_TIMEZONE)
     )
 
     with connected_terminal() as mt5:

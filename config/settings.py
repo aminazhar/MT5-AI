@@ -27,8 +27,8 @@ VOID_LEVEL_NAME = "E5"
 # Supported values: "low_to_high" and "high_to_low".
 FIB_DIRECTION = "high_to_low"
 
-# Future Telegram timestamps and MT5 candle matching must use this explicitly.
-SIGNAL_TIMEZONE = "Asia/Kuala_Lumpur"
+# Canonical timezone representation for broker timestamps.
+BROKER_TIMEZONE = "Asia/Kuala_Lumpur"
 
 # Only these confirmed signal messages are processed by the Telegram test reader.
 TARGET_INDICATOR = "PROJECT V || Indicator NQ426"
